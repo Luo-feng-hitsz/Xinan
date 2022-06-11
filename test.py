@@ -13,7 +13,7 @@ string = "Third party might collect and retain your name and contact address, an
 
 dep_parser = CoreNLPDependencyParser(url='http://localhost:9000')
 parses, = dep_parser.raw_parse(string)
-# print(parses.to_conll(4))
+print(parses.to_conll(4))
 A = parses.to_conll(4).split('\n')
 A.pop()
 words = []

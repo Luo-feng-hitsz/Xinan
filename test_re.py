@@ -1,11 +1,15 @@
-import tensorflow as tf
+from nltk.corpus import wordnet
+classes = ['UNDEFINED', 'LOG', 'FINGERPRINT', 'NETWORK', 'LOCATION', 'BATTERY', 'WIFI', 'CAMERA', 
+    'ACCOUNT', 'CALENDAR', 'SCREEN', 'ACTIVITY_INFO', 'SYNC', 'DATABASE', 'CONTACT', 'MICROPHONE', 'PHONE_CALL', 
+    'SENSOR', 'SMS','STORAGE', 'USER_HISTORY', 'HARDWARE', 'BLUETOOTH', 'MULTIMEDIA', 'SETTINGS', 'BUNDLE', 'SHARE_PREFERENCE', 
+    'NOTIFICATION', 'FINANCIAL'
+    ]
 
-# Convert the model
-converter = tf.lite.TFLiteConverter.from_saved_model("/home/wufisher/Xinan/data/test_model_path") # path to the SavedModel directory
-converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS,
-                                       tf.lite.OpsSet.SELECT_TF_OPS]
-tflite_model = converter.convert()
+for word in classes:
+    synonyms = []
+    for syn in wordnet.synsets(word):
+        for lm in syn.lemmas():
+            synonyms.append(lm.name())
+    print([word, set(synonyms)])
+    
 
-# Save the model.
-with open('model.tflite', 'wb') as f:
-    f.write(tflite_model)

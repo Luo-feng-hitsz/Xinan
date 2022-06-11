@@ -6,6 +6,7 @@ from unittest import result
 import bert_based
 from nltk.parse import CoreNLPParser
 from nltk.parse.corenlp import CoreNLPDependencyParser
+from nltk.corpus import wordnet
 import nltk.stem.porter as pt
 import re
 import csv
@@ -22,7 +23,44 @@ verbs = ['access', 'assign', 'collect', 'create', 'enter', 'gather', 'import', '
     'win', 'ask','use', 'process', 'monitor', 'see', 'utilize', 'utilise', 'employ', 'take', 
     'upload', 'cache','delete','erase','keep', 'remove', 'retain', 'store', 'accumulate', 
     'hold', 'encrypt', 'encipher', 'cipher', 'save', 'maintain','reserve', 'communicate', 
-    'disclose', 'reveal', 'receive', 'sell', 'send', 'view', 'share', 'transfer', 'provide', 'offer', 'render','expose', 'uncover', 'transport', 'transmit'
+    'disclose', 'reveal', 'receive', 'sell', 'send', 'view', 'share', 'transfer', 'provide',
+    'offer', 'render','expose', 'uncover', 'transport', 'transmit'
+    ]
+classes = ['UNDEFINED', 'LOG', 'FINGERPRINT', 'NETWORK', 'LOCATION', 'BATTERY', 'WIFI', 'CAMERA', 
+    'ACCOUNT', 'CALENDAR', 'SCREEN', 'ACTIVITY_INFO', 'SYNC', 'DATABASE', 'CONTACT', 'MICROPHONE', 'PHONE_CALL', 
+    'SENSOR', 'SMS','STORAGE', 'USER_HISTORY', 'HARDWARE', 'BLUETOOTH', 'MULTIMEDIA', 'SETTINGS', 'BUNDLE', 'SHARE_PREFERENCE', 
+    'NOTIFICATION', 'FINANCIAL'
+    ]
+sim_words = [
+    ['undefined', 'vague'],
+    ['lumber', 'logarithm', 'log', 'data'],
+    ['fingermark', 'fingerprint'],
+    ['web', 'net', 'meshwork', 'electronic_network', 'network', 'mesh', 'meshing'],
+    ['positioning', 'emplacement', 'position', 'placement', 'localization', 'locating', 'fix', 'localisation', 'location', 'location information', 'address'],
+    ['barrage', 'shelling', 'barrage_fire', 'assault_and_battery', 'stamp_battery', 'battery', 'electric_battery', 'bombardment'],
+    ['wireless_fidelity', 'wireless_local_area_network', 'WLAN', 'WiFi', 'wifi'],
+    ['television_camera', 'photographic_camera', 'tv_camera', 'camera', 'camera phone'],
+    ['report', 'chronicle', 'account_statement', 'describe', 'business_relationship', 'answer_for', 'news_report', 'explanation', 'write_up', 'accounting', 'bill', 'history', 'score', 'calculate', 'story', 'account', 'invoice'],
+    ['calendar'],
+    ['concealment', 'screen_door', 'test', 'cover', 'blind', 'filmdom', 'block_out', 'projection_screen', 'screenland', 'sort', 'shield', 'screen_out', 'silver_screen', 'screen', 'riddle', 'sieve', 'CRT_screen', 'covert'],
+    ['ACTIVITY_INFO','activity_info', 'Activity_info'],
+    ['sync', 'synchronise', 'synchronize'],
+    ['database'],
+    ['get_through', 'physical_contact', 'striking', 'liaison', 'touch', 'adjoin', 'reach', 'inter-group_communication', 'get_hold_of', 'tangency', 'contact', 'meet', 'impinging', 'contact_lens', 'middleman', 'link'],
+    ['mike', 'microphone'],
+    ['call', 'telephone_call', 'phone_call'],
+    ['sensing_element', 'sensor', 'detector'],
+    ['samarium', 'MSc', 'Sm', 'SM', 'atomic_number_62', 'MS', 'Master_of_Science'],
+    ['information', 'gallery', 'memory', 'warehousing', 'reposition', 'memory_board', 'computer_memory', 'repositing', 'store', 'computer_storage', 'entrepot', 'storehouse', 'storage', 'depot'],
+    ['USER_HISTORY', 'user_history', 'number'],
+    ['hardware', 'computer_hardware', 'ironware'],
+    ['BLUETOOTH', 'bluetooth', 'Bluetooth'],
+    ['multimedia_system', 'multimedia'],
+    ['place_setting', 'setting', 'scope', 'mise_en_scene', 'mount', 'background', 'stage_setting', 'circumstance', 'scene', 'context'],
+    ['roll_up', 'big_money', 'package', 'big_bucks', 'sheaf', 'pile', 'bundle', 'bunch_up', 'practice_bundling', 'pack', 'packet', 'megabucks', 'bundle_up', 'cluster', 'clump', 'bunch', 'compact', 'parcel', 'wad'],
+    ['SHARE_PREFERENCE', 'share_preference'],
+    ['telling', 'notice', 'notification', 'apprisal', 'presentment'],
+    ['financial', 'fiscal'],
     ]
 def tran_to_table(text):
     """
@@ -226,7 +264,7 @@ def get_governors(Policy):
         governor_decorates.append(governor_decorate)
     # print(governor_decorates)
     return governor_decorates
-def ptint_policy_table(Policy, conditions, action_data_pairs, governors):
+def print_policy_table(Policy, conditions, action_data_pairs, governors):
     # print("===============================================================")
     for sentence, condition, action_data_pair, governor in zip(Policy, conditions, action_data_pairs, governors):
         print("语句id：", sentence[0])
@@ -250,7 +288,8 @@ def extract_whole_part(Policy, datas):
     rule6 = "([a-z]*) consists of,? (.*)"
     rule7 = "([a-z]*),? for example,? (.*)"
     rule8 = "([a-z]*),? for instance,? (.*)"
-    rules = [rule1, rule2, rule3, rule4, rule5, rule6, rule7, rule8]
+    rule9 = "([a-z]*) through,? (.*)"
+    rules = [rule1, rule2, rule3, rule4, rule5, rule6, rule7, rule8, rule9]
     recompiles = []
     for rule in rules:
         recompile = re.compile(rule)
@@ -285,6 +324,7 @@ def extract_whole_part(Policy, datas):
             if whole in data:
                 flag = 1
         words = tran_to_table(sentence[1])
+        whole_decorate = 'no whole'
         if flag == 1: # 说明是表示整体的词，则加修饰
             for word in words:
                 if (word[3] == 'amod' or word[3] == 'compound' or word[3] == 'advmod') and (words[int(word[2]) - 1][0] == whole):
@@ -367,11 +407,11 @@ def get_Last_result(Policy, actions, data_decorates, whole_parts_pairs, governor
     Last_results = remove_dup(Last_results)
     return Last_results, action_data_pairs, new_governors
                     
-def write_into_csv(Last_results, out_file):
+def write_into_csv(Last_results, out_file, title):
     fw = open(out_file, 'w')
     writer = csv.writer(fw)
     #先写入columns_name
-    writer.writerow(["Privacy information","Collecting action","Collector","Condition"])
+    writer.writerow(title)
             #写入多行用writerows
     writer.writerows(Last_results)
     fw.close()
@@ -382,6 +422,32 @@ def write_into_csv(Last_results, out_file):
     # B = pd.DataFrame(A)
     # B.to_csv('/home/wufisher/Xinan/data/our_data/Result.csv', encoding='utf-8-sig') 
 
+def classify():
+    results = []
+    for word in classes:
+        synonyms = []
+        for syn in wordnet.synsets(word):
+            for lm in syn.lemmas():
+                synonyms.append(lm.name())
+        results.append(set(synonyms))
+    # print(results)
+    return results
+
+def get_classfied_results(Last_results):
+    classfied_results = []
+    for Last_result in Last_results:
+        classfied_result = []
+        classfied_result.extend(Last_result)
+        flag = 0
+        for word, sim_word in zip(classes, sim_words):
+            if Last_result[0] in sim_word:
+                classfied_result.insert(0, word)
+                flag = 1
+                break
+        if flag == 0:
+            classfied_result.insert(0, "UNDEFINED")
+        classfied_results.append(classfied_result)
+    return classfied_results
 
 if __name__ == '__main__':
     # 输入文件为sample.csv，输出文件为predict_result.csv，返回到列表D：每行就是一个语句（id，文本，类别）
@@ -401,7 +467,7 @@ if __name__ == '__main__':
     actions = get_collect_action(D)
     action_data_pairs, datas, data_decorates = get_action_data_pairs(D, actions)
     governors = get_governors(D)
-    ptint_policy_table(D, conditions, action_data_pairs, governors)
+    print_policy_table(D, conditions, action_data_pairs, governors)
 
     # ========================整体与部分关系抽取========================
     print("========================整体与部分关系抽取========================")
@@ -413,5 +479,15 @@ if __name__ == '__main__':
     # ========================结果的整合与输出========================
     print("========================结果的整合与输出========================")
     Last_results, action_data_pairs, governors = get_Last_result(D, actions, data_decorates, whole_parts_pairs, governors, conditions)
-    write_into_csv(Last_results, '/home/wufisher/Xinan/data/our_data/Last_result.csv')
-    ptint_policy_table(D, conditions, action_data_pairs, governors)
+    title = ["Privacy information","Collecting action","Collector","Condition"]
+    write_into_csv(Last_results, '/home/wufisher/Xinan/data/our_data/Last_result.csv', title)
+    print_policy_table(D, conditions, action_data_pairs, governors)
+
+    # ========================同义词========================
+    classfied_results = get_classfied_results(Last_results)
+    title = ["Class","Privacy information","Collecting action","Collector","Condition"]
+    new_classfied_results = []
+    for classfied_result in classfied_results:
+        # if classfied_result[0] != "UNDEFINED":
+        new_classfied_results.append(classfied_result)
+    write_into_csv(new_classfied_results, '/home/wufisher/Xinan/data/our_data/classfied_results.csv', title)
