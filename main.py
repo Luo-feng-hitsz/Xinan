@@ -33,14 +33,14 @@ classes = ['UNDEFINED', 'LOG', 'FINGERPRINT', 'NETWORK', 'LOCATION', 'BATTERY', 
     ]
 sim_words = [
     ['undefined', 'vague'],
-    ['lumber', 'logarithm', 'log', 'data'],
+    ['log information', 'lumber', 'logarithm', 'log', 'data'],
     ['fingermark', 'fingerprint'],
     ['web', 'net', 'meshwork', 'electronic_network', 'network', 'mesh', 'meshing'],
-    ['positioning', 'emplacement', 'position', 'placement', 'localization', 'locating', 'fix', 'localisation', 'location', 'location information', 'address'],
+    ['location-based information', 'positioning', 'emplacement', 'position', 'placement', 'localization', 'locating', 'fix', 'localisation', 'location', 'location information', 'address'],
     ['barrage', 'shelling', 'barrage_fire', 'assault_and_battery', 'stamp_battery', 'battery', 'electric_battery', 'bombardment'],
     ['wireless_fidelity', 'wireless_local_area_network', 'WLAN', 'WiFi', 'wifi'],
     ['television_camera', 'photographic_camera', 'tv_camera', 'camera', 'camera phone'],
-    ['report', 'chronicle', 'account_statement', 'describe', 'business_relationship', 'answer_for', 'news_report', 'explanation', 'write_up', 'accounting', 'bill', 'history', 'score', 'calculate', 'story', 'account', 'invoice'],
+    ['account information', 'report', 'chronicle', 'account_statement', 'describe', 'business_relationship', 'answer_for', 'news_report', 'explanation', 'write_up', 'accounting', 'bill', 'history', 'score', 'calculate', 'story', 'account', 'invoice'],
     ['calendar'],
     ['concealment', 'screen_door', 'test', 'cover', 'blind', 'filmdom', 'block_out', 'projection_screen', 'screenland', 'sort', 'shield', 'screen_out', 'silver_screen', 'screen', 'riddle', 'sieve', 'CRT_screen', 'covert'],
     ['ACTIVITY_INFO','activity_info', 'Activity_info'],
@@ -52,15 +52,15 @@ sim_words = [
     ['sensing_element', 'sensor', 'detector'],
     ['samarium', 'MSc', 'Sm', 'SM', 'atomic_number_62', 'MS', 'Master_of_Science'],
     ['information', 'gallery', 'memory', 'warehousing', 'reposition', 'memory_board', 'computer_memory', 'repositing', 'store', 'computer_storage', 'entrepot', 'storehouse', 'storage', 'depot'],
-    ['USER_HISTORY', 'user_history', 'number'],
-    ['hardware', 'computer_hardware', 'ironware'],
+    ['your name', 'username', 'gender', 'date of birth', 'phone number', 'cookies', 'aggregated usage', 'performance data', 'where downloaded', 'USER_HISTORY', 'user_history', 'number'],
+    ['hardware', 'computer_hardware', 'ironware', 'device'],
     ['BLUETOOTH', 'bluetooth', 'Bluetooth'],
     ['multimedia_system', 'multimedia'],
     ['place_setting', 'setting', 'scope', 'mise_en_scene', 'mount', 'background', 'stage_setting', 'circumstance', 'scene', 'context'],
-    ['roll_up', 'big_money', 'package', 'big_bucks', 'sheaf', 'pile', 'bundle', 'bunch_up', 'practice_bundling', 'pack', 'packet', 'megabucks', 'bundle_up', 'cluster', 'clump', 'bunch', 'compact', 'parcel', 'wad'],
+    ['mobile software', 'roll_up', 'big_money', 'package', 'big_bucks', 'sheaf', 'pile', 'bundle', 'bunch_up', 'practice_bundling', 'pack', 'packet', 'megabucks', 'bundle_up', 'cluster', 'clump', 'bunch', 'compact', 'parcel', 'wad'],
     ['SHARE_PREFERENCE', 'share_preference'],
     ['telling', 'notice', 'notification', 'apprisal', 'presentment'],
-    ['financial', 'fiscal'],
+    ['financial', 'fiscal', 'financial information', 'bank information', 'WeChat Pay', 'Alipay','bank information'],
     ]
 def tran_to_table(text):
     """
@@ -473,9 +473,17 @@ if __name__ == '__main__':
     print("========================整体与部分关系抽取========================")
     whole_parts_pairs = extract_whole_part(D, datas)
     print("whole_parts_pairs: ")
+    # 固定的一些组合，手动添加
+    fix_pairs = [
+        ['certain information', ['your name', 'username', 'gender', 'date of birth', 'mobile phone number', 'location']],
+        ['personal information', ['your name', 'username', 'gender', 'date of birth', 'phone number', 'location', 'email address', 'images', 'geo-location', 'personal identity number', 'financial information', 'identifiable biological information']],
+        ['such information', ['WiFi', 'network']],
+        ['information', ['information', 'device']]
+    ]
+    for fix_pair in fix_pairs:
+        whole_parts_pairs.append(fix_pair)
     for whole_parts_pair in whole_parts_pairs:
         print(whole_parts_pair)
-    
     # ========================结果的整合与输出========================
     print("========================结果的整合与输出========================")
     Last_results, action_data_pairs, governors = get_Last_result(D, actions, data_decorates, whole_parts_pairs, governors, conditions)
